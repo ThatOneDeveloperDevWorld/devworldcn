@@ -153,14 +153,9 @@
     <script src="devworldeng.js"></script>
 
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
 
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
             apiKey: "AIzaSyCzjI_B6WrMpnH9bD8jfezcYbVJt3qdLKA",
             authDomain: "devworldcn.firebaseapp.com",
@@ -171,7 +166,6 @@
             measurementId: "G-BMRTW2FG75"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
     </script>
@@ -193,13 +187,11 @@
         const db = firebase.firestore();
         db.settings({ experimentalForceLongPolling: true });
 
-        // 設定驗證持久性為 LOCAL
         firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
             .catch((error) => {
                 console.warn("驗證持久性錯誤：", error.message);
             });
 
-        // 根據停權狀態處理使用者重新導向的輔助函式
         function handleUserRedirect(user) {
             db.collection("users").doc(user.uid).get().then((doc) => {
                 if (doc.exists && doc.data().isBanned === true) {
@@ -213,7 +205,6 @@
             });
         }
 
-        // 1. 透過引擎進行初始開始按鈕選單彈跳視窗
         document.getElementById('open-start-btn').addEventListener('click', () => {
             const currentUser = firebase.auth().currentUser;
             if (currentUser) {
@@ -240,7 +231,6 @@
             });
         });
 
-        // 2. 透過引擎配置產生的註冊彈跳視窗 (改用使用者名稱/密碼登入機制)
         function openSignupPopup() {
             dev.createpopup({
                 title: "建立帳號",
@@ -267,8 +257,9 @@
                                 return;
                             }
 
-                            // 將使用者名稱轉換為專用的內部電子郵件格式以對應 Firebase Auth
-                            const syntheticEmail = `${username.toLowerCase().replace(/[^a-z0-9]/g, '')}@devworld.local`;
+                            // Safely encode Chinese/multilingual usernames into a valid email local-part format
+                            const encodedUsername = btoa(encodeURIComponent(username)).replace(/=/g, '');
+                            const syntheticEmail = `${encodedUsername.toLowerCase()}@devworld.local`;
 
                             firebase.auth().createUserWithEmailAndPassword(syntheticEmail, pass)
                             .then((userCredential) => {
@@ -283,7 +274,13 @@
                                 });
                             })
                             .catch((error) => {
-                                alert("錯誤：" + error.message);
+                                let errorMsg = error.message;
+                                if (error.code === 'auth/email-already-in-use') {
+                                    errorMsg = "這個使用者名稱已經被使用了。";
+                                } else if (error.code === 'auth/weak-password') {
+                                    errorMsg = "密碼強度太弱，請至少輸入 6 個字元。";
+                                }
+                                alert("錯誤：" + errorMsg);
                             });
                         }
                     }
@@ -291,7 +288,6 @@
             });
         }
 
-        // 3. 透過引擎配置產生的登入彈跳視窗 (改用使用者名稱/密碼登入機制)
         function openLoginPopup() {
             dev.createpopup({
                 title: "登入帳號",
@@ -313,15 +309,22 @@
                                 return;
                             }
 
-                            // 將使用者名稱轉換回對應的內部電子郵件格式進行驗證
-                            const syntheticEmail = `${username.toLowerCase().replace(/[^a-z0-9]/g, '')}@devworld.local`;
+                            // Encode the username identically for login lookup
+                            const encodedUsername = btoa(encodeURIComponent(username)).replace(/=/g, '');
+                            const syntheticEmail = `${encodedUsername.toLowerCase()}@devworld.local`;
 
                             firebase.auth().signInWithEmailAndPassword(syntheticEmail, pass)
                             .then((userCredential) => {
                                 handleUserRedirect(userCredential.user);
                             })
                             .catch((error) => {
-                                alert("錯誤：" + error.message);
+                                let errorMsg = error.message;
+                                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                                    errorMsg = "使用者名稱或密碼錯誤。";
+                                } else if (error.code === 'auth/invalid-email') {
+                                    errorMsg = "使用者名稱格式無效。";
+                                }
+                                alert("錯誤：" + errorMsg);
                             });
                         }
                     }
