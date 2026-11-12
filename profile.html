@@ -375,7 +375,6 @@
 
         .popup-menu-item:hover { background: #e2e6ea; }
 
-        /* Dev Points Modal Styling */
         .dev-points-banner {
             max-width: 120px;
             width: 100%;
@@ -417,7 +416,6 @@
     </div>
 
     <div id="main-profile-container" class="main-container">
-        <!-- Profile Picture Display (Square) -->
         <div class="profile-pfp-container">
             <img id="profile-pfp-display" src="people.png" alt="個人頭像" class="profile-pfp-img" onerror="this.src='https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/people.png'">
         </div>
@@ -583,101 +581,108 @@
             document.getElementById("settings-modal").classList.remove("active");
         }
 
+        // Check auth status or fallback to key-based session
         firebase.auth().onAuthStateChanged((user) => {
+            const keyUid = localStorage.getItem("devworld_key_uid");
+
             if (user) {
-                document.getElementById("uid-display").innerText = "ID: " + user.uid;
-                const userDocRef = db.collection("users").doc(user.uid);
-
-                userDocRef.get().then((doc) => {
-                    if (doc.exists) {
-                        currentUserData = doc.data();
-                        
-                        let devPoints = currentUserData.devPoints !== undefined ? currentUserData.devPoints : 100;
-
-                        // Automatic ban check if dev points drop into banned range (79 to 0) -> sets isBanned to true
-                        if (devPoints <= 79) {
-                            userDocRef.set({ isBanned: true }, { merge: true }).then(() => {
-                                alert("你的帳號已被封鎖，因為你的開發者積分降至 " + devPoints + " 分。");
-                                firebase.auth().signOut().then(() => {
-                                    window.location.href = "index.html";
-                                });
-                            });
-                            return;
-                        }
-
-                        // Populate the Dev Points modal status display with plain colored text (no background, no emojis)
-                        const modalDisplay = document.getElementById("modal-dev-points-display");
-
-                        if (devPoints === 100) {
-                            modalDisplay.style.color = "#2b8a3e"; // Green
-                            modalDisplay.innerText = `${devPoints}`;
-                        } else if (devPoints >= 90 && devPoints <= 99) {
-                            modalDisplay.style.color = "#f59f00"; // Yellow
-                            modalDisplay.innerText = `${devPoints}`;
-                        } else if (devPoints >= 80 && devPoints <= 89) {
-                            modalDisplay.style.color = "#d9480f"; // Orange
-                            modalDisplay.innerText = `${devPoints}`;
-                        } else {
-                            modalDisplay.style.color = "#c92a2a"; // Red
-                            modalDisplay.innerText = `${devPoints}`;
-                        }
-
-                        let updateData = {};
-                        let needsUpdate = false;
-
-                        if (!currentUserData.followers) { updateData.followers = []; needsUpdate = true; }
-                        if (!currentUserData.following) { updateData.following = []; needsUpdate = true; }
-                        if (currentUserData.devPoints === undefined) { updateData.devPoints = 100; needsUpdate = true; }
-                        if (currentUserData.isBanned === undefined) { updateData.isBanned = false; needsUpdate = true; }
-                        if (currentUserData.pfpUrl === undefined) { updateData.pfpUrl = ""; needsUpdate = true; }
-                        if (currentUserData.profileColor === undefined) { updateData.profileColor = "#ffffff"; needsUpdate = true; }
-
-                        if (needsUpdate) {
-                            userDocRef.set(updateData, { merge: true });
-                        }
-
-                        document.getElementById("username-input").value = currentUserData.Username || "";
-                        document.getElementById("bio-input").value = currentUserData.Bio || "";
-                        document.getElementById("pfp-url-input").value = currentUserData.pfpUrl || "";
-                        document.getElementById("profile-color-input").value = currentUserData.profileColor || "#ffffff";
-                        document.getElementById("welcome-user").innerText = currentUserData.Username || "創作者個人檔案";
-                        
-                        // Set main profile card background color
-                        document.getElementById("main-profile-container").style.backgroundColor = currentUserData.profileColor || "#ffffff";
-
-                        // Set profile picture or default to people.png
-                        const pfpImg = document.getElementById("profile-pfp-display");
-                        if (currentUserData.pfpUrl && currentUserData.pfpUrl.trim() !== "") {
-                            pfpImg.src = currentUserData.pfpUrl;
-                        } else {
-                            pfpImg.src = "people.png";
-                        }
-
-                        document.getElementById("followers-count").innerText = (currentUserData.followers || []).length;
-                        document.getElementById("following-count").innerText = (currentUserData.following || []).length;
-                    } else {
-                        currentUserData = {
-                            Username: "DevWorldUser",
-                            Bio: "正在製作超棒的遊戲！",
-                            followers: [],
-                            following: [],
-                            devPoints: 100,
-                            isBanned: false,
-                            pfpUrl: "",
-                            profileColor: "#ffffff"
-                        };
-                        userDocRef.set(currentUserData, { merge: true });
-                        document.getElementById("welcome-user").innerText = "DevWorldUser";
-                        document.getElementById("profile-pfp-display").src = "people.png";
-                        document.getElementById("main-profile-container").style.backgroundColor = "#ffffff";
-                    }
-                });
-
-                loadUserContent(user.uid);
+                initProfile(user.uid);
+            } else if (keyUid) {
+                // Logged in via login key without Firebase Auth session
+                initProfile(keyUid);
             } else {
                 window.location.href = "index.html";
             }
         });
+
+        function initProfile(uid) {
+            document.getElementById("uid-display").innerText = "ID: " + uid;
+            const userDocRef = db.collection("users").doc(uid);
+
+            userDocRef.get().then((doc) => {
+                if (doc.exists) {
+                    currentUserData = doc.data();
+                    
+                    let devPoints = currentUserData.devPoints !== undefined ? currentUserData.devPoints : 100;
+
+                    if (devPoints <= 79) {
+                        userDocRef.set({ isBanned: true }, { merge: true }).then(() => {
+                            alert("你的帳號已被封鎖，因為你的開發者積分降至 " + devPoints + " 分。");
+                            localStorage.removeItem("devworld_key_uid");
+                            firebase.auth().signOut().then(() => {
+                                window.location.href = "index.html";
+                            });
+                        });
+                        return;
+                    }
+
+                    const modalDisplay = document.getElementById("modal-dev-points-display");
+
+                    if (devPoints === 100) {
+                        modalDisplay.style.color = "#2b8a3e";
+                        modalDisplay.innerText = `${devPoints}`;
+                    } else if (devPoints >= 90 && devPoints <= 99) {
+                        modalDisplay.style.color = "#f59f00";
+                        modalDisplay.innerText = `${devPoints}`;
+                    } else if (devPoints >= 80 && devPoints <= 89) {
+                        modalDisplay.style.color = "#d9480f";
+                        modalDisplay.innerText = `${devPoints}`;
+                    } else {
+                        modalDisplay.style.color = "#c92a2a";
+                        modalDisplay.innerText = `${devPoints}`;
+                    }
+
+                    let updateData = {};
+                    let needsUpdate = false;
+
+                    if (!currentUserData.followers) { updateData.followers = []; needsUpdate = true; }
+                    if (!currentUserData.following) { updateData.following = []; needsUpdate = true; }
+                    if (currentUserData.devPoints === undefined) { updateData.devPoints = 100; needsUpdate = true; }
+                    if (currentUserData.isBanned === undefined) { updateData.isBanned = false; needsUpdate = true; }
+                    if (currentUserData.pfpUrl === undefined) { updateData.pfpUrl = ""; needsUpdate = true; }
+                    if (currentUserData.profileColor === undefined) { updateData.profileColor = "#ffffff"; needsUpdate = true; }
+
+                    if (needsUpdate) {
+                        userDocRef.set(updateData, { merge: true });
+                    }
+
+                    document.getElementById("username-input").value = currentUserData.Username || "";
+                    document.getElementById("bio-input").value = currentUserData.Bio || "";
+                    document.getElementById("pfp-url-input").value = currentUserData.pfpUrl || "";
+                    document.getElementById("profile-color-input").value = currentUserData.profileColor || "#ffffff";
+                    document.getElementById("welcome-user").innerText = currentUserData.Username || "創作者個人檔案";
+                    
+                    document.getElementById("main-profile-container").style.backgroundColor = currentUserData.profileColor || "#ffffff";
+
+                    const pfpImg = document.getElementById("profile-pfp-display");
+                    if (currentUserData.pfpUrl && currentUserData.pfpUrl.trim() !== "") {
+                        pfpImg.src = currentUserData.pfpUrl;
+                    } else {
+                        pfpImg.src = "people.png";
+                    }
+
+                    document.getElementById("followers-count").innerText = (currentUserData.followers || []).length;
+                    document.getElementById("following-count").innerText = (currentUserData.following || []).length;
+                } else {
+                    currentUserData = {
+                        Username: "DevWorldUser",
+                        Bio: "正在製作超棒的遊戲！",
+                        followers: [],
+                        following: [],
+                        devPoints: 100,
+                        isBanned: false,
+                        pfpUrl: "",
+                        profileColor: "#ffffff"
+                    };
+                    userDocRef.set(currentUserData, { merge: true });
+                    document.getElementById("welcome-user").innerText = "DevWorldUser";
+                    document.getElementById("profile-pfp-display").src = "people.png";
+                    document.getElementById("main-profile-container").style.backgroundColor = "#ffffff";
+                }
+            });
+
+            loadUserContent(uid);
+        }
 
         async function openFollowersModal() {
             if (!currentUserData) return;
@@ -804,7 +809,8 @@
                 const delBtn = document.createElement("button");
                 delBtn.className = "btn-item-delete";
                 delBtn.innerText = "刪除遊戲";
-                delBtn.onclick = () => deleteGame(game.id, firebase.auth().currentUser.uid, game.authorId);
+                const activeUid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem("devworld_key_uid");
+                delBtn.onclick = () => deleteGame(game.id, activeUid, game.authorId);
                 card.appendChild(delBtn);
                 gamesContainer.appendChild(card);
             });
@@ -822,7 +828,6 @@
             renderGamesChunk();
         }
 
-        // Admin game deletion handling dev points deduction and ban flag
         async function deleteGame(gameId, currentAuthUid, authorId) {
             const adminUid = 'ccZGPg7EzbNphnL0du3msMFIpjJ3';
             const isAdmin = (currentAuthUid === adminUid);
@@ -878,14 +883,14 @@
         }
 
         document.getElementById("save-btn").addEventListener("click", () => {
-            const user = firebase.auth().currentUser;
-            if (user) {
+            const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : localStorage.getItem("devworld_key_uid");
+            if (uid) {
                 const newUsername = document.getElementById("username-input").value;
                 const newBio = document.getElementById("bio-input").value;
                 const newPfpUrl = document.getElementById("pfp-url-input").value.trim();
                 const newProfileColor = document.getElementById("profile-color-input").value;
 
-                db.collection("users").doc(user.uid).set({
+                db.collection("users").doc(uid).set({
                     Username: newUsername,
                     Bio: newBio,
                     pfpUrl: newPfpUrl,
@@ -917,6 +922,8 @@
         });
 
         document.getElementById("logout-btn").addEventListener("click", () => {
+            localStorage.removeItem("devworld_key_uid");
+            localStorage.removeItem("devworld_key_username");
             firebase.auth().signOut().then(() => {
                 window.location.href = "index.html";
             });
@@ -935,10 +942,17 @@
 
         document.getElementById('confirm-delete-btn').addEventListener('click', () => {
             const user = firebase.auth().currentUser;
-            if (user) {
-                db.collection("users").doc(user.uid).delete()
-                .then(() => user.delete())
+            const keyUid = localStorage.getItem("devworld_key_uid");
+            const uid = user ? user.uid : keyUid;
+
+            if (uid) {
+                db.collection("users").doc(uid).delete()
                 .then(() => {
+                    if (user) return user.delete();
+                })
+                .then(() => {
+                    localStorage.removeItem("devworld_key_uid");
+                    localStorage.removeItem("devworld_key_username");
                     alert("你的帳號已成功刪除。");
                     window.location.href = "index.html";
                 })

@@ -231,10 +231,38 @@
             });
         });
 
-        // Helper function to convert any username (Chinese or English) into a 100% valid Firebase Auth email
-        function getSyntheticEmail(username) {
-            const clean = encodeURIComponent(username.trim().toLowerCase()).replace(/%/g, 'x');
-            return `${clean}@devworld.local`;
+        function generateLoginKey() {
+            return 'KEY-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function showLoginKeyPopup(loginKey, user) {
+            dev.createpopup({
+                title: "帳號建立成功！請保存登入金鑰",
+                inputs: {
+                    "display-key": { type: "text", placeholder: loginKey }
+                },
+                buttons: {
+                    "btn-copy-key": {
+                        text: "複製金鑰並繼續",
+                        color: "#38b000",
+                        textColor: "#fff",
+                        onClick: () => {
+                            if (navigator.clipboard) {
+                                navigator.clipboard.writeText(loginKey).catch(() => {});
+                            }
+                            handleUserRedirect(user);
+                        }
+                    }
+                }
+            });
+            // Pre-fill the input box so the user can easily select/copy it
+            setTimeout(() => {
+                const keyInput = document.getElementById("display-key");
+                if (keyInput) {
+                    keyInput.value = loginKey;
+                    keyInput.readOnly = true;
+                }
+            }, 50);
         }
 
         function openSignupPopup() {
@@ -263,18 +291,23 @@
                                 return;
                             }
 
-                            const syntheticEmail = getSyntheticEmail(username);
+                            const randomId = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+                            const permanentEmail = `${randomId}@devworld.local`;
+                            const loginKey = generateLoginKey();
 
-                            firebase.auth().createUserWithEmailAndPassword(syntheticEmail, pass)
+                            firebase.auth().createUserWithEmailAndPassword(permanentEmail, pass)
                             .then((userCredential) => {
                                 const user = userCredential.user;
                                 return db.collection("users").doc(user.uid).set({
                                     Username: username,
+                                    originalUsername: username,
+                                    signupEmail: permanentEmail,
+                                    loginKey: loginKey,
                                     Bio: "什麼都沒有... :/",
                                     Projects: [],
                                     isBanned: false
                                 }, { merge: true }).then(() => {
-                                    handleUserRedirect(user);
+                                    showLoginKeyPopup(loginKey, user);
                                 });
                             })
                             .catch((error) => {
@@ -296,38 +329,73 @@
             dev.createpopup({
                 title: "登入帳號",
                 inputs: {
-                    "login-username": { type: "text", placeholder: "使用者名稱" },
-                    "login-pass": { type: "password", placeholder: "密碼" }
+                    "login-username": { type: "text", placeholder: "最新使用者名稱" },
+                    "login-pass": { type: "password", placeholder: "密碼 (或使用下方金鑰)" },
+                    "login-key": { type: "text", placeholder: "登入金鑰 (選填，替代密碼)" }
                 },
                 buttons: {
                     "btn-login": {
                         text: "登入",
                         color: "#38b000",
                         textColor: "#fff",
-                        onClick: () => {
+                        onClick: async () => {
                             const username = document.getElementById("login-username").value.trim();
                             const pass = document.getElementById("login-pass").value;
+                            const loginKey = document.getElementById("login-key").value.trim();
 
-                            if (!username || !pass) {
-                                alert("請同時輸入使用者名稱和密碼。");
+                            if (!username) {
+                                alert("請輸入使用者名稱。");
+                                return;
+                            }
+                            if (!pass && !loginKey) {
+                                alert("請輸入密碼或登入金鑰。");
                                 return;
                             }
 
-                            const syntheticEmail = getSyntheticEmail(username);
+                            try {
+                                const querySnapshot = await db.collection("users").where("Username", "==", username).get();
 
-                            firebase.auth().signInWithEmailAndPassword(syntheticEmail, pass)
-                            .then((userCredential) => {
-                                handleUserRedirect(userCredential.user);
-                            })
-                            .catch((error) => {
-                                let errorMsg = error.message;
-                                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                                    errorMsg = "使用者名稱或密碼錯誤。";
-                                } else if (error.code === 'auth/invalid-email') {
-                                    errorMsg = "使用者名稱格式無效。";
+                                if (querySnapshot.empty) {
+                                    alert("錯誤：找不到此使用者名稱。");
+                                    return;
                                 }
-                                alert("錯誤：" + errorMsg);
-                            });
+
+                                const userDoc = querySnapshot.docs[0];
+                                const userData = userDoc.data();
+
+                                // If logging in with Login Key, check against stored loginKey
+                                if (loginKey) {
+                                    if (userData.loginKey && loginKey === userData.loginKey) {
+                                        // Store session info locally so profile.html knows who logged in via key
+                                        localStorage.setItem("devworld_key_uid", userDoc.id);
+                                        localStorage.setItem("devworld_key_username", userData.Username);
+                                        window.location.href = "profile.html";
+                                        return;
+                                    } else {
+                                        alert("錯誤：登入金鑰不正確。");
+                                        return;
+                                    }
+                                }
+
+                                // Otherwise log in normally with Password + permanent signupEmail
+                                const targetEmail = userData.signupEmail || `${encodeURIComponent(username.trim().toLowerCase()).replace(/%/g, 'x')}@devworld.local`;
+
+                                firebase.auth().signInWithEmailAndPassword(targetEmail, pass)
+                                .then((userCredential) => {
+                                    handleUserRedirect(userCredential.user);
+                                })
+                                .catch((error) => {
+                                    let errorMsg = "使用者名稱或密碼錯誤。";
+                                    if (error.code === 'auth/wrong-password') {
+                                        errorMsg = "密碼錯誤。";
+                                    }
+                                    alert("錯誤：" + errorMsg);
+                                });
+
+                            } catch (err) {
+                                console.error("登入查詢錯誤：", err);
+                                alert("登入時發生錯誤，請稍後再試。");
+                            }
                         }
                     }
                 }
