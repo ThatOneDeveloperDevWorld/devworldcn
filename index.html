@@ -231,6 +231,12 @@
             });
         });
 
+        // Helper function to convert any username (Chinese or English) into a 100% valid Firebase Auth email
+        function getSyntheticEmail(username) {
+            const clean = encodeURIComponent(username.trim().toLowerCase()).replace(/%/g, 'x');
+            return `${clean}@devworld.local`;
+        }
+
         function openSignupPopup() {
             dev.createpopup({
                 title: "建立帳號",
@@ -257,9 +263,7 @@
                                 return;
                             }
 
-                            // Safely encode Chinese/multilingual usernames into a valid email local-part format
-                            const encodedUsername = btoa(encodeURIComponent(username)).replace(/=/g, '');
-                            const syntheticEmail = `${encodedUsername.toLowerCase()}@devworld.local`;
+                            const syntheticEmail = getSyntheticEmail(username);
 
                             firebase.auth().createUserWithEmailAndPassword(syntheticEmail, pass)
                             .then((userCredential) => {
@@ -309,9 +313,7 @@
                                 return;
                             }
 
-                            // Encode the username identically for login lookup
-                            const encodedUsername = btoa(encodeURIComponent(username)).replace(/=/g, '');
-                            const syntheticEmail = `${encodedUsername.toLowerCase()}@devworld.local`;
+                            const syntheticEmail = getSyntheticEmail(username);
 
                             firebase.auth().signInWithEmailAndPassword(syntheticEmail, pass)
                             .then((userCredential) => {
