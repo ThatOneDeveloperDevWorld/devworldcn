@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dev World - 遊玩</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        
+        body {
+            background: #111;
+            color: #fff;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        .game-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #87CEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        .hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            pointer-events: auto;
+        }
+
+        #level-title-display {
+            font-size: 18px;
+            text-shadow: 2px 2px 0px #000;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .creator-link {
+            font-size: 13px;
+            color: #5ce1e6;
+            text-shadow: 1px 1px 0px #000;
+            text-decoration: underline;
+            cursor: pointer;
+            width: fit-content;
+        }
+
+        .creator-link:hover {
+            color: #ffffff;
+        }
+
+        .engine-version {
+            font-size: 12px;
+            color: #ffffff;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-exit {
+            background: #ff595e;
+            color: white;
+            border: 2px solid #000;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            text-decoration: none;
+            pointer-events: auto;
+            text-shadow: none;
+        }
+
+        .btn-exit:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .overlay-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 20px 30px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .overlay-controls > * {
+            pointer-events: auto;
+        }
+
+        .joystick-base {
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid #000;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0px #000;
+            touch-action: none;
+        }
+
+        .joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 3px solid #000;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 3px 0px #000;
+            pointer-events: none;
+            transform: translate(0px, 0px);
+        }
+
+        .jump-btn {
+            width: 80px;
+            height: 80px;
+            background: #03ff9c;
+            border: 3px solid #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 28px;
+            color: #000;
+            box-shadow: 0 5px 0px #000;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .jump-btn:active, .jump-btn.active {
+            background: #b8ffe3;
+            transform: translateY(3px);
+            box-shadow: 0 2px 0px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-wrapper" id="game-wrapper">
+        <div class="hud">
+            <div class="hud-left">
+                <span id="level-title-display">正在載入關卡...</span>
+                <a id="creator-display" class="creator-link" style="display: none;">創作者：未知</a>
+                <span class="engine-version">v0.1.32.8</span>
+            </div>
+            <a href="home.html" class="btn-exit">離開</a>
+        </div>
+        <canvas id="gameCanvas" width="800" height="800"></canvas>
+    </div>
+
+    <div class="overlay-controls">
+        <div class="joystick-base" id="joystick-base">
+            <div class="joystick-stick" id="joystick-stick"></div>
+        </div>
+        <div class="jump-btn" id="btn-jump">A</div>
+    </div>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzjI_B6WrMpnH9bD8jfezcYbVJt3qdLKA",
+            authDomain: "devworldcn.firebaseapp.com",
+            projectId: "devworldcn",
+            storageBucket: "devworldcn.firebasestorage.app",
+            messagingSenderId: "1078417025797",
+            appId: "1:1078417025797:web:b52a825d5a3b0b182b656c",
+            measurementId: "G-BMRTW2FG75"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+        db.settings({ experimentalForceLongPolling: true });
+
+        const tileImages = {
+            grass: "Untitled342_20260812162232.png",
+            dirt: "Untitled343_20260812162324.png",
+            brick: "Untitled341_20260812162119.png",
+            sand: "Untitled360_20260820135759.png",
+            player: "Untitled340_20260812161929.png",
+            water: "water.png",
+            bridge: "bridge.png",
+            cloud: "cloud.png",
+            bush: "bush.png",
+            tree: "tree.png",
+            spike: "spike.png",
+            lava: "lava.png"
+        };
+
+        const tileFallbackColors = {
+            grass: '#4bb543',
+            dirt: '#8b5a2b',
+            brick: '#a52a2a',
+            sand: '#e9c46a',
+            water: '#3a86ff',
+            bridge: '#9c6644',
+            cloud: '#ffffff',
+            bush: '#2b9348',
+            tree: '#007f5f',
+            spike: '#ff0054',
+            lava: '#fb8500'
+        };
+
+        const loadedImages = {};
+        for (let key in tileImages) {
+            if (tileImages[key]) {
+                let img = new Image();
+                img.src = tileImages[key];
+                loadedImages[key] = img;
+            }
+        }
+
+        let levelData = null;
+        let player = { x: 100, y: 100, w: 40, h: 40, vx: 0, vy: 0, speed: 5, jump: -13, grounded: false };
+        let keys = {};
+        let lavaTimer = 0;
+
+        function setupMobileControls() {
+            const jumpBtn = document.getElementById('btn-jump');
+            let jumpTouchId = null;
+
+            if (jumpBtn) {
+                jumpBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    let touch = e.changedTouches[0];
+                    jumpTouchId = touch.identifier;
+                    keys['Space'] = true;
+                    jumpBtn.classList.add('active');
+                }, { passive: false });
+
+                const handleJumpEnd = (e) => {
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === jumpTouchId) {
+                            keys['Space'] = false;
+                            jumpBtn.classList.remove('active');
+                            jumpTouchId = null;
+                        }
+                    }
+                };
+
+                jumpBtn.addEventListener('touchend', handleJumpEnd, { passive: false });
+                jumpBtn.addEventListener('touchcancel', handleJumpEnd, { passive: false });
+
+                jumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); keys['Space'] = true; jumpBtn.classList.add('active'); });
+                jumpBtn.addEventListener('mouseup', (e) => { e.preventDefault(); keys['Space'] = false; jumpBtn.classList.remove('active'); });
+            }
+
+            const base = document.getElementById('joystick-base');
+            const stick = document.getElementById('joystick-stick');
+            let joystickTouchId = null;
+            let center = { x: 0, y: 0 };
+            const maxDist = 35;
+
+            base.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (joystickTouchId === null) {
+                    let touch = e.changedTouches[0];
+                    joystickTouchId = touch.identifier;
+                    const rect = base.getBoundingClientRect();
+                    center.x = rect.left + rect.width / 2;
+                    center.y = rect.top + rect.height / 2;
+                    updateJoystickPosition(touch.clientX, touch.clientY);
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (joystickTouchId === null) return;
+                for (let i = 0; i < e.touches.length; i++) {
+                    if (e.touches[i].identifier === joystickTouchId) {
+                        e.preventDefault();
+                        updateJoystickPosition(e.touches[i].clientX, e.touches[i].clientY);
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            const handleJoystickEnd = (e) => {
+                if (joystickTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joystickTouchId) {
+                        joystickTouchId = null;
+                        stick.style.transform = `translate(0px, 0px)`;
+                        keys['ArrowLeft'] = false;
+                        keys['ArrowRight'] = false;
+                    }
+                }
+            };
+
+            window.addEventListener('touchend', handleJoystickEnd);
+            window.addEventListener('touchcancel', handleJoystickEnd);
+
+            function updateJoystickPosition(clientX, clientY) {
+                let dx = clientX - center.x;
+                let dy = clientY - center.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+
+                stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                keys['ArrowLeft'] = dx < -6;
+                keys['ArrowRight'] = dx > 6;
+            }
+
+            let mouseActive = false;
+            base.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                mouseActive = true;
+                const rect = base.getBoundingClientRect();
+                center.x = rect.left + rect.width / 2;
+                center.y = rect.top + rect.height / 2;
+                updateJoystickPosition(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!mouseActive) return;
+                updateJoystickPosition(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', () => {
+                if (!mouseActive) return;
+                mouseActive = false;
+                stick.style.transform = `translate(0px, 0px)`;
+                keys['ArrowLeft'] = false;
+                keys['ArrowRight'] = false;
+            });
+        }
+
+        async function initGamePlayer() {
+            setupMobileControls();
+
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const gameId = params.get('id');
+
+            if (mode === 'test') {
+                const temp = sessionStorage.getItem('tempLevelGrid');
+                if (temp) {
+                    levelData = JSON.parse(temp);
+                    document.getElementById('level-title-display').innerText = "測試模式";
+                    registerCustomTiles(levelData.customTiles);
+                    setupLevel();
+                } else {
+                    alert("找不到測試關卡資料。");
+                    window.location.href = 'editor.html';
+                }
+            } else if (gameId) {
+                try {
+                    const docRef = db.collection("games").doc(gameId);
+                    const doc = await docRef.get();
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('level-title-display').innerText = data.title || "社群關卡";
+                        
+                        const creatorId = data.authorId || data.creatorId;
+                        let creatorName = data.creatorUsername || data.Username || "";
+
+                        if (creatorId) {
+                            try {
+                                const userDoc = await db.collection("users").doc(creatorId).get();
+                                if (userDoc.exists) {
+                                    const uData = userDoc.data();
+                                    creatorName = uData.Username || uData.username || creatorName || "未知";
+                                }
+                            } catch (e) {
+                                console.warn("無法取得創作者個人檔案詳細資料", e);
+                            }
+                        }
+
+                        if (!creatorName) creatorName = "未知創作者";
+
+                        const creatorEl = document.getElementById('creator-display');
+                        creatorEl.innerText = `創作者：${creatorName}`;
+                        creatorEl.style.display = 'block';
+                        if (creatorId) {
+                            creatorEl.onclick = () => {
+                                window.location.href = `userprofile.html?id=${creatorId}`;
+                            };
+                        }
+
+                        levelData = {
+                            cols: data.cols || 16,
+                            rows: data.rows || 16,
+                            bgColor: data.bgColor || "#87CEEB",
+                            content: data.content,
+                            customTiles: data.customTiles || []
+                        };
+
+                        registerCustomTiles(levelData.customTiles);
+
+                        firebase.auth().onAuthStateChanged(async (user) => {
+                            const isCreator = user && (user.uid === data.authorId || user.uid === data.creatorId);
+                            if (!isCreator) {
+                                try {
+                                    await docRef.update({
+                                        visits: firebase.firestore.FieldValue.increment(1)
+                                    });
+
+                                    if (creatorId) {
+                                        const creatorRef = db.collection("users").doc(creatorId);
+                                        const creatorDoc = await creatorRef.get();
+                                        if (creatorDoc.exists) {
+                                            const cData = creatorDoc.data();
+                                            if (cData.coins !== undefined) {
+                                                await creatorRef.update({
+                                                    coins: firebase.firestore.FieldValue.increment(1)
+                                                });
+                                            } else if (cData.DevCoins !== undefined) {
+                                                await creatorRef.update({
+                                                    DevCoins: firebase.firestore.FieldValue.increment(1)
+                                                });
+                                            } else {
+                                                await creatorRef.set({ coins: 1 }, { merge: true });
+                                            }
+                                        } else {
+                                            await creatorRef.set({ coins: 1 }, { merge: true });
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log("瀏覽次數計數器或金幣更新受限", e);
+                                }
+                            }
+                        });
+
+                        setupLevel();
+                    } else {
+                        alert("關卡不存在。");
+                        window.location.href = 'home.html';
+                    }
+                } catch (err) {
+                    console.error("載入關卡時發生錯誤：", err);
+                }
+            } else {
+                alert("未選取任何關卡。");
+                window.location.href = 'home.html';
+            }
+        }
+
+        function registerCustomTiles(customTilesArray) {
+            if (!customTilesArray || !Array.isArray(customTilesArray)) return;
+            customTilesArray.forEach(tile => {
+                if (tile.id && tile.img) {
+                    let img = new Image();
+                    img.src = tile.img;
+                    loadedImages[tile.id] = img;
+                    tileFallbackColors[tile.id] = '#cccccc';
+                }
+            });
+        }
+
+        function setupLevel() {
+            document.getElementById('game-wrapper').style.backgroundColor = levelData.bgColor || "#87CEEB";
+            
+            if (levelData.content.playerStart) {
+                let boxSize = 800;
+                let tileSize = boxSize / levelData.cols;
+                player.x = levelData.content.playerStart.x * tileSize;
+                player.y = levelData.content.playerStart.y * tileSize;
+            }
+
+            window.addEventListener('keydown', e => {
+                if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+                keys[e.code] = true;
+            });
+            window.addEventListener('keyup', e => keys[e.code] = false);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() {
+            updatePhysics();
+            renderGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics() {
+            let boxSize = 800;
+            let tileSize = boxSize / levelData.cols;
+
+            player.vx = 0;
+            if (keys['ArrowLeft'] || keys['KeyA']) player.vx = -player.speed;
+            if (keys['ArrowRight'] || keys['KeyD']) player.vx = player.speed;
+
+            player.x += player.vx;
+            if (player.x < 0) player.x = 0;
+            if (player.x > boxSize - player.w) player.x = boxSize - player.w;
+
+            const solidBaseBlocks = ['grass', 'dirt', 'brick', 'sand', 'bridge'];
+            const customTileIds = (levelData.customTiles || []).map(t => t.id);
+            const solidBlocks = [...solidBaseBlocks, ...customTileIds];
+
+            levelData.content.blocks.forEach(b => {
+                if (solidBlocks.includes(b.type)) {
+                    let bx = b.x * tileSize;
+                    let by = b.y * tileSize;
+                    if (isColliding(player.x, player.y, player.w, player.h, bx, by, tileSize, tileSize)) {
+                        if (player.vx > 0) {
+                            player.x = bx - player.w;
+                        } else if (player.vx < 0) {
+                            player.x = bx + tileSize;
+                        }
+                    }
+                }
+            });
+
+            let inWater = false;
+            let touchingLava = false;
+
+            levelData.content.blocks.forEach(b => {
+                let bx = b.x * tileSize;
+                let by = b.y * tileSize;
+
+                if (b.type === 'spike') {
+                    if (isColliding(player.x, player.y, player.w, player.h, bx + 2, by + 2, tileSize - 4, tileSize - 4)) {
+                        resetPlayerPosition();
+                    }
+                } else if (b.type === 'lava') {
+                    if (isColliding(player.x, player.y, player.w, player.h, bx, by, tileSize, tileSize)) {
+                        touchingLava = true;
+                    }
+                } else if (b.type === 'water') {
+                    if (isColliding(player.x, player.y, player.w, player.h, bx, by, tileSize, tileSize)) {
+                        inWater = true;
+                    }
+                }
+            });
+
+            if (touchingLava) {
+                lavaTimer++;
+                if (lavaTimer >= 60) {
+                    resetPlayerPosition();
+                }
+            } else {
+                lavaTimer = 0;
+            }
+
+            if (inWater) {
+                player.vy += 0.2;
+                if (player.vy > 2.5) player.vy = 2.5;
+            } else {
+                player.vy += 0.6;
+            }
+
+            player.y += player.vy;
+            player.grounded = false;
+
+            levelData.content.blocks.forEach(b => {
+                if (solidBlocks.includes(b.type)) {
+                    let bx = b.x * tileSize;
+                    let by = b.y * tileSize;
+                    if (isColliding(player.x, player.y, player.w, player.h, bx, by, tileSize, tileSize)) {
+                        if (player.vy > 0) {
+                            player.y = by - player.h;
+                            player.vy = 0;
+                            player.grounded = true;
+                        } else if (player.vy < 0) {
+                            player.y = by + tileSize;
+                            player.vy = 0;
+                        }
+                    }
+                }
+            });
+
+            if ((keys['ArrowUp'] || keys['KeyW'] || keys['Space']) && (player.grounded || inWater)) {
+                player.vy = inWater ? -6 : player.jump;
+                player.grounded = false;
+            }
+
+            if (player.y > boxSize) {
+                resetPlayerPosition();
+            }
+        }
+
+        function resetPlayerPosition() {
+            lavaTimer = 0;
+            if (levelData.content.playerStart) {
+                let boxSize = 800;
+                let tileSize = boxSize / levelData.cols;
+                player.x = levelData.content.playerStart.x * tileSize;
+                player.y = levelData.content.playerStart.y * tileSize;
+                player.vy = 0;
+            }
+        }
+
+        function isColliding(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+        }
+
+        function renderGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            let boxSize = 800;
+            let tileSize = boxSize / levelData.cols;
+
+            ctx.clearRect(0, 0, boxSize, boxSize);
+
+            levelData.content.blocks.forEach(b => {
+                let bx = b.x * tileSize;
+                let by = b.y * tileSize;
+
+                if (loadedImages[b.type] && loadedImages[b.type].complete && loadedImages[b.type].naturalWidth !== 0) {
+                    ctx.drawImage(loadedImages[b.type], bx, by, tileSize, tileSize);
+                } else {
+                    ctx.fillStyle = tileFallbackColors[b.type] || '#888';
+                    ctx.fillRect(bx, by, tileSize, tileSize);
+                }
+            });
+
+            if (loadedImages.player && loadedImages.player.complete && loadedImages.player.naturalWidth !== 0) {
+                ctx.drawImage(loadedImages.player, player.x, player.y, player.w, player.h);
+            } else {
+                ctx.fillStyle = '#ff595e';
+                ctx.fillRect(player.x, player.y, player.w, player.h);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initGamePlayer();
+        });
+    </script>
+</body>
+</html>

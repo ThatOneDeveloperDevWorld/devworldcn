@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev World - 首頁</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        
+        body {
+            background-color: #5ce1e6;
+            background-image: url('https://github.com/ThatOneDeveloperDevWorld/devworldsource/blob/main/Untitled338_20260812133205.png?raw=true');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #212529;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 90px;
+        }
+
+        .clouds-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: url('https://github.com/ThatOneDeveloperDevWorld/devworldsource/blob/main/Untitled338_20260812133205.png?raw=true');
+            background-repeat: repeat-x;
+            background-size: contain;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .fullscreen-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 3px solid #000000;
+            border-radius: 14px;
+            box-shadow: 0 5px 0px #000000;
+            padding: 12px 18px;
+        }
+
+        .logo-img {
+            max-width: 120px;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(2px 2px 0px #000);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+            background: #ffffff;
+            border: 3px solid #000000;
+            border-radius: 14px;
+            box-shadow: 0 5px 0px #000000;
+            padding: 12px 18px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            background: #f8f9fa;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+        }
+
+        .btn-search {
+            padding: 10px 16px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            background: #ffb703;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .section-title {
+            font-size: 18px;
+            text-transform: uppercase;
+            margin: 5px 0 0 0;
+            color: #000;
+            background: #ffffff;
+            border: 3px solid #000;
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 0px #000;
+            align-self: flex-start;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+
+        .game-card-square {
+            background: #ffffff;
+            border: 2.5px solid #000;
+            border-radius: 12px;
+            box-shadow: 3px 3px 0px #000;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            text-decoration: none;
+            color: #000;
+            gap: 6px;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .game-card-square:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .game-card-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border: 2px solid #000;
+            border-radius: 8px;
+        }
+
+        .game-card-title {
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .visits-count {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .loading-text {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 16px;
+            color: #000;
+            background: #fff;
+            border: 3px solid #000;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        /* Fixed Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0 -4px 0px #000000;
+            border-top: 3px solid #000000;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            text-decoration: none;
+            transition: transform 0.1s ease;
+        }
+
+        .nav-item img {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-create-item {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            position: relative;
+            bottom: 2.5px;
+            transition: transform 0.1s ease;
+        }
+
+        .nav-create-item img {
+            height: 68px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-item:active, .nav-create-item:active {
+            transform: scale(0.92);
+        }
+
+        /* Popup Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border: 3px solid #000;
+            border-radius: 14px;
+            box-shadow: 5px 5px 0px #000;
+            width: 100%;
+            max-width: 360px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .modal-text {
+            font-size: 14px;
+            color: #333;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            transition: transform 0.1s ease;
+        }
+
+        .modal-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-cancel { background: #ff6b6b; color: #fff; }
+        .btn-confirm { background: #55ff55; color: #000; }
+    </style>
+</head>
+<body onload="initHome()">
+
+    <div class="clouds-bg"></div>
+
+    <div class="fullscreen-container">
+        <div class="nav-row">
+            <img src="Devworldlogobeta.png" alt="Dev World" class="logo-img">
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="search-username-input" class="input-field" placeholder="搜尋使用者名稱...">
+            <button class="btn-search" onclick="searchUser()">尋找</button>
+        </div>
+
+        <h3 class="section-title">所有遊戲</h3>
+        
+        <div class="games-grid" id="games-container">
+            <div class="loading-text">載入中...</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="wallet.html" class="nav-item">
+            <img src="wallet.png" alt="錢包">
+        </a>
+        <a href="posts.html" class="nav-item">
+            <img src="posts.png" alt="貼文">
+        </a>
+        <button type="button" class="nav-create-item" onclick="openCreateModal()">
+            <img src="create.png" alt="建立">
+        </button>
+        <a href="profile.html" class="nav-item">
+            <img src="profile.png" alt="個人檔案">
+        </a>
+    </nav>
+
+    <!-- Create Confirmation Popup Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal-box">
+            <h3 class="modal-title">建立遊戲</h3>
+            <p class="modal-text">要建立新遊戲嗎？一旦發布，此遊戲將對 Dev World 上的所有人公開。</p>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-cancel" onclick="closeCreateModal()">取消</button>
+                <button class="modal-btn btn-confirm" onclick="confirmCreate()">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzjI_B6WrMpnH9bD8jfezcYbVJt3qdLKA",
+            authDomain: "devworldcn.firebaseapp.com",
+            projectId: "devworldcn",
+            storageBucket: "devworldcn.firebasestorage.app",
+            messagingSenderId: "1078417025797",
+            appId: "1:1078417025797:web:b52a825d5a3b0b182b656c",
+            measurementId: "G-BMRTW2FG75"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const db = firebase.firestore();
+        db.settings({ experimentalForceLongPolling: true });
+
+        const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif'];
+        const DEFAULT_ICON = 'gameres.png';
+
+        async function searchUser() {
+            const queryName = document.getElementById('search-username-input').value.trim();
+            if (!queryName) {
+                alert("請輸入使用者名稱。");
+                return;
+            }
+
+            try {
+                const querySnapshot = await db.collection("users").where("Username", "==", queryName).get();
+                if (!querySnapshot.empty) {
+                    window.location.href = `userprofile.html?id=${querySnapshot.docs[0].id}`;
+                    return;
+                }
+
+                const querySnapshotLower = await db.collection("users").where("username", "==", queryName).get();
+                if (!querySnapshotLower.empty) {
+                    window.location.href = `userprofile.html?id=${querySnapshotLower.docs[0].id}`;
+                    return;
+                }
+
+                alert("找不到使用者！");
+            } catch (error) {
+                console.error("搜尋使用者時發生錯誤：", error);
+                alert("尋找失敗。");
+            }
+        }
+
+        async function initHome() {
+            const container = document.getElementById('games-container');
+            try {
+                const snapshot = await db.collection("games").orderBy("createdAt", "desc").get();
+                container.innerHTML = '';
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<div class="loading-text">尚未發布任何遊戲。</div>';
+                    return;
+                }
+
+                for (let doc of snapshot.docs) {
+                    const game = doc.data();
+                    const gameId = doc.id;
+
+                    const card = document.createElement('a');
+                    card.className = 'game-card-square';
+                    card.href = `play.html?id=${gameId}`;
+
+                    const img = document.createElement('img');
+                    
+                    // Validate custom icon URL from Dev World CREATE using allowed extensions check
+                    let iconSrc = DEFAULT_ICON;
+                    if (game.iconUrl && typeof game.iconUrl === 'string') {
+                        const cleanUrl = game.iconUrl.split('?')[0].split('#')[0].toLowerCase();
+                        if (ALLOWED_EXTENSIONS.some(ext => cleanUrl.endsWith(ext))) {
+                            iconSrc = game.iconUrl;
+                        }
+                    }
+
+                    img.src = iconSrc;
+                    img.alt = game.title || "遊戲圖示";
+                    img.className = 'game-card-img';
+                    img.onerror = () => { img.src = DEFAULT_ICON; };
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'game-card-title';
+                    titleDiv.innerText = game.title || "未命名關卡";
+
+                    const visitsDiv = document.createElement('div');
+                    visitsDiv.className = 'visits-count';
+                    visitsDiv.innerText = `${game.visits || 0} 次瀏覽`;
+
+                    card.appendChild(img);
+                    card.appendChild(titleDiv);
+                    card.appendChild(visitsDiv);
+                    container.appendChild(card);
+                }
+            } catch (error) {
+                console.error("載入遊戲摘要時發生錯誤：", error);
+                container.innerHTML = '<div class="loading-text" style="color:red;">載入遊戲失敗。</div>';
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+
+        function confirmCreate() {
+            window.location.href = 'editor.html';
+        }
+    </script>
+</body>
+</html>

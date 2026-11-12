@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev World - 工作室</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #5ce1e6;
+            background-image: url('https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/Untitled338_20260812133205.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #212529;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 15px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .clouds-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: url('https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/Untitled338_20260812133205.png');
+            background-repeat: repeat-x;
+            background-size: contain;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            border: 4px solid #000000;
+            border-radius: 20px;
+            box-shadow: 0 8px 0px #000000;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-img {
+            max-width: 100px;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(2px 2px 0px #000);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            background: #ff595e;
+            color: #fff;
+        }
+
+        .btn-sm:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-settings {
+            background: #00f5d4;
+            color: #000;
+        }
+
+        .toolbar-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            background: #f8f9fa;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+        }
+
+        .label-title {
+            font-size: 12px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .workspace-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #87CEEB;
+            border: 3px solid #000;
+            border-radius: 12px;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            touch-action: none;
+        }
+
+        #grid-container {
+            display: grid;
+            gap: 1px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .grid-cell {
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #000;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            background: #e9ecef;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .palette-drawer {
+            display: flex;
+            gap: 8px;
+            background: #f8f9fa;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 8px;
+            overflow-x: auto;
+            min-height: 56px;
+            align-items: center;
+        }
+
+        .block-option {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            flex-shrink: 0;
+        }
+
+        .block-option.selected {
+            border-color: #ffb703;
+            transform: scale(1.1);
+            background-color: #fff3b0;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .block-option img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-custom {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            text-align: center;
+        }
+
+        .btn-custom:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-publish { background: #55ff55; color: #000; }
+        .btn-test { background: #48cae4; color: #000; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #000;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            transition: transform 0.2s ease;
+            z-index: 1000;
+            border: 2px solid #fff;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Modal Overlay Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border: 3px solid #000;
+            border-radius: 14px;
+            box-shadow: 5px 5px 0px #000;
+            width: 100%;
+            max-width: 360px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Preview card mimicking home.html game-card-square */
+        .game-card-square-preview {
+            background: #ffffff;
+            border: 2.5px solid #000;
+            border-radius: 12px;
+            box-shadow: 3px 3px 0px #000;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            color: #000;
+            gap: 6px;
+            width: 140px;
+            margin: 0 auto;
+        }
+
+        .game-card-img-preview {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border: 2px solid #000;
+            border-radius: 8px;
+        }
+
+        .game-card-title-preview {
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .visits-count-preview {
+            font-size: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+<body onload="initStudio()">
+
+    <div class="clouds-bg"></div>
+
+    <div class="main-container">
+        <div class="nav-row">
+            <img src="Devworldlogobeta.png" alt="Dev World" class="logo-img">
+            <div style="display: flex; gap: 6px;">
+                <button class="btn-sm btn-settings" onclick="openSettingsModal()">設定</button>
+                <a href="home.html" class="btn-sm">離開</a>
+            </div>
+        </div>
+
+        <div>
+            <label class="label-title">遊戲標題</label>
+            <input type="text" id="game-title-input" class="input-field" placeholder="為你的精彩關卡命名..." oninput="updatePreviewTitle()">
+        </div>
+
+        <div class="toolbar-grid">
+            <div>
+                <label class="label-title">網格大小</label>
+                <input type="number" id="grid-size" class="input-field" value="16" min="8" max="32" onchange="resizeGrid()">
+            </div>
+            <div>
+                <label class="label-title">背景顏色</label>
+                <input type="color" id="bg-color" class="input-field" value="#87CEEB" onchange="changeBackground()" style="height: 39px; padding: 2px; cursor: pointer;">
+            </div>
+        </div>
+
+        <div class="workspace-box" id="workspace">
+            <div id="grid-container"></div>
+        </div>
+
+        <div>
+            <label class="label-title">選擇類別</label>
+            <select id="category-select" class="category-select" onchange="switchCategory()">
+                <option value="tiles">方塊與磚塊</option>
+                <option value="decor">裝飾與元素</option>
+                <option value="traps">陷阱與尖刺</option>
+                <option value="custom">自訂方塊</option>
+            </select>
+        </div>
+
+        <div class="palette-drawer" id="palette-drawer"></div>
+
+        <div class="action-buttons">
+            <button class="btn-custom btn-test" onclick="testPlay()">測試試玩</button>
+            <button class="btn-custom btn-publish" onclick="publishGame()">發布遊戲</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-box">
+            <h3 style="margin: 0; font-size: 18px;">工作室設定</h3>
+
+            <div>
+                <label class="label-title">遊戲圖示</label>
+                <input type="text" id="game-icon-input" class="input-field" placeholder="在此輸入連結..." oninput="validateGameIconUrl()">
+                <span id="game-icon-error" style="font-size: 10px; color: #ff595e; display: none;">格式無效！僅允許 .gif、.png、.jpg 與 .jpeg。</span>
+            </div>
+
+            <!-- Home-style Preview -->
+            <div style="text-align: center; margin: 5px 0;">
+                <label class="label-title" style="margin-bottom: 6px;">遊戲預覽</label>
+                <div class="game-card-square-preview">
+                    <img id="preview-card-img" src="gameres.png" alt="預覽圖示" class="game-card-img-preview" onerror="this.src='gameres.png'">
+                    <div id="preview-card-title" class="game-card-title-preview">未命名關卡</div>
+                    <div class="visits-count-preview">0 次瀏覽</div>
+                </div>
+            </div>
+
+            <hr style="width: 100%; border: 1px solid #ddd; margin: 4px 0;">
+
+            <div>
+                <label class="label-title">自訂方塊</label>
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+                    <input type="text" id="custom-tile-name" class="input-field" placeholder="名稱..." />
+                    <input type="text" id="custom-tile-url" class="input-field" placeholder="在此輸入連結..." oninput="validateCustomTileUrl()" />
+                </div>
+                <span id="tile-url-error" style="font-size: 10px; color: #ff595e; display: none;">圖片格式無效！僅允許 .gif、.png、.jpg 與 .jpeg。</span>
+                <button class="btn-sm" style="background: #55ff55; color: #000; width: 100%; margin-top: 6px;" onclick="addCustomTile()">新增自訂方塊</button>
+            </div>
+
+            <button class="btn-sm" style="background: #e9ecef; color: #000; margin-top: 8px;" onclick="closeSettingsModal()">關閉</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已儲存！</div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzjI_B6WrMpnH9bD8jfezcYbVJt3qdLKA",
+            authDomain: "devworldcn.firebaseapp.com",
+            projectId: "devworldcn",
+            storageBucket: "devworldcn.firebasestorage.app",
+            messagingSenderId: "1078417025797",
+            appId: "1:1078417025797:web:b52a825d5a3b0b182b656c",
+            measurementId: "G-BMRTW2FG75"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+        db.settings({ experimentalForceLongPolling: true });
+
+        const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif'];
+        let currentUser = null;
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) { 
+                currentUser = user; 
+            } else { 
+                firebase.auth().signInAnonymously().catch((error) => {
+                    console.error("匿名登入失敗：", error);
+                });
+            }
+        });
+
+        const catalog = {
+            tiles: [
+                { id: 'grass', name: '草地', img: 'Untitled342_20260812162232.png' },
+                { id: 'dirt', name: '泥土', img: 'Untitled343_20260812162324.png' },
+                { id: 'brick', name: '磚塊', img: 'Untitled341_20260812162119.png' },
+                { id: 'sand', name: '沙子', img: 'Untitled360_20260820135759.png' },
+                { id: 'water', name: '水', img: 'water.png' },
+                { id: 'bridge', name: '橋樑', img: 'bridge.png' }
+            ],
+            decor: [
+                { id: 'player', name: '玩家起點', img: 'Untitled340_20260812161929.png' },
+                { id: 'cloud', name: '雲朵', img: 'cloud.png' },
+                { id: 'bush', name: '灌木', img: 'bush.png' },
+                { id: 'tree', name: '樹木', img: 'tree.png' }
+            ],
+            traps: [
+                { id: 'spike', name: '尖刺', img: 'spike.png' },
+                { id: 'lava', name: '熔岩', img: 'lava.png' }
+            ],
+            custom: []
+        };
+
+        let currentSize = 16;
+        let currentTileType = 'grass';
+        let isDrawing = false;
+        let levelData = { playerStart: null, blocks: [] };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function updatePreviewTitle() {
+            const title = document.getElementById('game-title-input').value.trim();
+            document.getElementById('preview-card-title').innerText = title || "未命名關卡";
+        }
+
+        function validateGameIconUrl() {
+            const input = document.getElementById('game-icon-input').value.trim();
+            const errSpan = document.getElementById('game-icon-error');
+            const previewImg = document.getElementById('preview-card-img');
+
+            if (!input) { 
+                errSpan.style.display = 'none'; 
+                previewImg.src = 'gameres.png';
+                return true; 
+            }
+
+            const clean = input.split('?')[0].split('#')[0].toLowerCase();
+            const isValid = ALLOWED_EXTENSIONS.some(ext => clean.endsWith(ext));
+            errSpan.style.display = isValid ? 'none' : 'block';
+
+            if (isValid) {
+                previewImg.src = input;
+            } else {
+                previewImg.src = 'gameres.png';
+            }
+            return isValid;
+        }
+
+        function validateCustomTileUrl() {
+            const input = document.getElementById('custom-tile-url').value.trim();
+            const errSpan = document.getElementById('tile-url-error');
+            if (!input) { errSpan.style.display = 'none'; return true; }
+            const clean = input.split('?')[0].split('#')[0].toLowerCase();
+            const isValid = ALLOWED_EXTENSIONS.some(ext => clean.endsWith(ext));
+            errSpan.style.display = isValid ? 'none' : 'block';
+            return isValid;
+        }
+
+        function addCustomTile() {
+            const nameInput = document.getElementById('custom-tile-name').value.trim();
+            const urlInput = document.getElementById('custom-tile-url').value.trim();
+
+            if (!nameInput) {
+                alert("請輸入自訂方塊名稱！");
+                return;
+            }
+            if (!urlInput || !validateCustomTileUrl()) {
+                alert("請輸入結尾為 .png、.jpg、.jpeg 或 .gif 的有效圖片網址！");
+                return;
+            }
+
+            const customId = 'custom_' + Date.now();
+            catalog.custom.push({ id: customId, name: nameInput, img: urlInput });
+
+            document.getElementById('custom-tile-name').value = '';
+            document.getElementById('custom-tile-url').value = '';
+            document.getElementById('category-select').value = 'custom';
+            switchCategory();
+            showToast("已新增自訂方塊！");
+            closeSettingsModal();
+        }
+
+        function initStudio() {
+            switchCategory();
+            buildGrid();
+        }
+
+        function switchCategory() {
+            const cat = document.getElementById('category-select').value;
+            const drawer = document.getElementById('palette-drawer');
+            drawer.innerHTML = '';
+
+            let eraserDiv = document.createElement('div');
+            eraserDiv.className = `block-option ${currentTileType === 'eraser' ? 'selected' : ''}`;
+            eraserDiv.innerHTML = '<span style="font-size:14px; font-weight:bold; color:#ff595e;">X</span>';
+            eraserDiv.title = '橡皮擦';
+            eraserDiv.onclick = () => selectTool('eraser', eraserDiv);
+            drawer.appendChild(eraserDiv);
+
+            catalog[cat].forEach(item => {
+                let div = document.createElement('div');
+                div.className = `block-option ${currentTileType === item.id ? 'selected' : ''}`;
+                if (item.img) {
+                    div.innerHTML = `<img src="${item.img}" alt="${item.name}" onerror="this.src='gameres.png'">`;
+                } else {
+                    div.innerHTML = `<span style="font-size:16px;">${item.emoji}</span>`;
+                }
+                div.title = item.name;
+                div.onclick = () => selectTool(item.id, div);
+                drawer.appendChild(div);
+            });
+        }
+
+        function selectTool(type, element) {
+            document.querySelectorAll('.block-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            currentTileType = type;
+        }
+
+        function changeBackground() {
+            const bg = document.getElementById('bg-color').value;
+            document.getElementById('workspace').style.backgroundColor = bg;
+        }
+
+        function resizeGrid() {
+            let val = parseInt(document.getElementById('grid-size').value);
+            if (isNaN(val) || val < 8) val = 8;
+            if (val > 32) val = 32;
+            document.getElementById('grid-size').value = val;
+            currentSize = val;
+            levelData.blocks = levelData.blocks.filter(b => b.x < currentSize && b.y < currentSize);
+            if (levelData.playerStart && (levelData.playerStart.x >= currentSize || levelData.playerStart.y >= currentSize)) {
+                levelData.playerStart = null;
+            }
+            buildGrid();
+        }
+
+        function applyCellAction(x, y) {
+            if (currentTileType === 'player') {
+                levelData.playerStart = { x, y };
+            } else if (currentTileType === 'eraser') {
+                levelData.blocks = levelData.blocks.filter(b => !(b.x === x && b.y === y));
+                if (levelData.playerStart && levelData.playerStart.x === x && levelData.playerStart.y === y) {
+                    levelData.playerStart = null;
+                }
+            } else {
+                levelData.blocks = levelData.blocks.filter(b => !(b.x === x && b.y === y));
+                levelData.blocks.push({ x, y, type: currentTileType });
+            }
+            renderCells();
+        }
+
+        function renderCells() {
+            const container = document.getElementById('grid-container');
+            const cells = container.children;
+            const flatCatalog = [...catalog.tiles, ...catalog.decor, ...catalog.traps, ...catalog.custom];
+
+            for (let i = 0; i < cells.length; i++) {
+                let cell = cells[i];
+                let x = parseInt(cell.dataset.x);
+                let y = parseInt(cell.dataset.y);
+
+                cell.style.backgroundImage = '';
+                cell.innerHTML = '';
+
+                let block = levelData.blocks.find(b => b.x === x && b.y === y);
+                if (block) {
+                    let found = flatCatalog.find(c => c.id === block.type);
+                    if (found && found.img) {
+                        cell.style.backgroundImage = `url('${found.img}')`;
+                    }
+                }
+
+                if (levelData.playerStart && levelData.playerStart.x === x && levelData.playerStart.y === y) {
+                    cell.style.backgroundImage = `url('Untitled340_20260812161929.png')`;
+                }
+            }
+        }
+
+        function buildGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${currentSize}, minmax(0, 1fr))`;
+
+            let boxSize = 280;
+            let cellSize = Math.floor(boxSize / currentSize);
+
+            for (let y = 0; y < currentSize; y++) {
+                for (let x = 0; x < currentSize; x++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.style.width = `${cellSize}px`;
+                    cell.style.height = `${cellSize}px`;
+
+                    cell.addEventListener('mousedown', (e) => { e.preventDefault(); isDrawing = true; applyCellAction(x, y); });
+                    cell.addEventListener('mouseover', () => { if (isDrawing) applyCellAction(x, y); });
+                    
+                    cell.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; applyCellAction(x, y); }, { passive: false });
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        if (e.touches && e.touches[0]) {
+                            let touch = e.touches[0];
+                            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+                            if (target && target.classList.contains('grid-cell')) {
+                                let tx = parseInt(target.dataset.x);
+                                let ty = parseInt(target.dataset.y);
+                                if (!isNaN(tx) && !isNaN(ty)) applyCellAction(tx, ty);
+                            }
+                        }
+                    }, { passive: false });
+
+                    container.appendChild(cell);
+                }
+            }
+            renderCells();
+        }
+
+        window.addEventListener('mouseup', () => { isDrawing = false; });
+        window.addEventListener('touchend', () => { isDrawing = false; });
+
+        function testPlay() {
+            sessionStorage.setItem('tempLevelGrid', JSON.stringify({
+                cols: currentSize,
+                rows: currentSize,
+                bgColor: document.getElementById('bg-color').value,
+                content: levelData,
+                customTiles: catalog.custom
+            }));
+            window.location.href = 'play.html?mode=test';
+        }
+
+        async function publishGame() {
+            const title = document.getElementById('game-title-input').value.trim();
+            if (!title) {
+                alert("請輸入要發布的自訂遊戲標題！");
+                document.getElementById('game-title-input').focus();
+                return;
+            }
+
+            const iconUrl = document.getElementById('game-icon-input').value.trim();
+            if (iconUrl && !validateGameIconUrl()) {
+                alert("請修正您的遊戲圖示網址，或將其留空。");
+                return;
+            }
+
+            let authorId = currentUser ? currentUser.uid : "anonymous_dev";
+
+            const gamePayload = {
+                title: title,
+                iconUrl: iconUrl || null,
+                authorId: authorId,
+                creatorId: authorId,
+                genre: "Platformer",
+                cols: currentSize,
+                rows: currentSize,
+                bgColor: document.getElementById('bg-color').value || "#87CEEB",
+                visits: 0,
+                content: levelData,
+                customTiles: catalog.custom,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                showToast("發布中...");
+                
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("發布逾時。請檢查您的連線或 Firebase 規則。")), 6000)
+                );
+
+                await Promise.race([
+                    db.collection("games").add(gamePayload),
+                    timeoutPromise
+                ]);
+
+                showToast("發布成功！");
+                setTimeout(() => window.location.href = 'home.html', 1500);
+            } catch (err) {
+                console.error("發布錯誤詳細資料：", err);
+                alert("發布失敗：" + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

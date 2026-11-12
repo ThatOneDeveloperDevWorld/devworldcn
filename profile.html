@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的個人檔案 - Dev World</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #5ce1e6;
+            background-image: url('https://github.com/ThatOneDeveloperDevWorld/devworldsource/blob/main/Untitled338_20260812133205.png?raw=true');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #212529;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px 10px;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+        }
+
+        .clouds-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 200%; height: 200%;
+            background-image: url('https://github.com/ThatOneDeveloperDevWorld/devworldsource/blob/main/Untitled338_20260812133205.png?raw=true');
+            background-repeat: repeat-x;
+            background-size: contain;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .top-nav-bar {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            max-width: 850px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .menu-btn {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000000;
+            transition: transform 0.1s ease;
+        }
+
+        .menu-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #000000;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 850px;
+            background: #ffffff;
+            border: 4px solid #000000;
+            border-radius: 20px;
+            box-shadow: 0 8px 0px #000000;
+            padding: 30px 15px;
+            text-align: left;
+            transition: background-color 0.2s ease;
+        }
+
+        .profile-pfp-container {
+            width: 90px;
+            height: 90px;
+            border-radius: 10px;
+            border: 3px solid #000;
+            overflow: hidden;
+            margin: 0 auto 12px auto;
+            background: #f8f9fa;
+            box-shadow: 2px 2px 0px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-pfp-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .header-title {
+            text-align: center;
+            font-size: 22px;
+            margin: 0 0 5px 0;
+        }
+
+        .uid-badge {
+            text-align: center;
+            font-size: 11px;
+            font-family: monospace;
+            background: #e9ecef;
+            border: 1px dashed #000;
+            padding: 4px 8px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+
+        .social-stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f8f9fa;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .stat-box {
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 10px;
+            transition: background 0.1s ease;
+        }
+
+        .stat-box:hover { background: #e2e6ea; }
+        .social-stats span { font-size: 12px; color: #555; display: block; }
+        .label-title { font-size: 13px; display: block; margin-bottom: 4px; }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            background: #f8f9fa;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            outline: none;
+        }
+
+        .color-input-field {
+            width: 100%;
+            height: 45px;
+            padding: 4px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            background: #f8f9fa;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .btn-custom {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+            transition: transform 0.1s ease;
+            margin-bottom: 12px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+        }
+
+        .btn-custom:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-save { background: #a1ffe4; color: #000; }
+        .btn-logout { background: #a1ffe4; color: #000; margin-bottom: 0; }
+        .btn-delete { background: #ff595e; color: #fff; margin-top: 0; margin-bottom: 0; }
+
+        .content-split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+            border-top: 3px dashed #000;
+            padding-top: 20px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .content-split-grid { grid-template-columns: 1fr; }
+        }
+
+        .section-column-title {
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            background: #ffffff;
+            border: 2px solid #000;
+            padding: 6px 10px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 0px #000;
+            display: inline-block;
+        }
+
+        .item-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .content-card {
+            background: #ffffff;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 2px 2px 0px #000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .inline-card-icon {
+            width: 20px; height: 20px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-right: 6px;
+            display: inline-block;
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: #000;
+            text-decoration: none;
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-meta { font-size: 11px; color: #555; }
+
+        .btn-item-delete {
+            background: #ff595e;
+            color: #fff;
+            border: 1.5px solid #000;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            box-shadow: 1.5px 1.5px 0px #000;
+            align-self: flex-start;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+        }
+
+        .btn-show-next {
+            background: #e9ecef;
+            color: #000;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 2px 2px 0px #000;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border: 4px solid #000000;
+            border-radius: 20px;
+            box-shadow: 0 8px 0px #000000;
+            width: 90%;
+            max-width: 380px;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .user-list-popup {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .user-popup-item {
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            border: 2px solid #000;
+            padding: 8px 12px;
+            border-radius: 10px;
+            color: #000;
+            text-decoration: none;
+            font-size: 14px;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .user-popup-item:hover { background: #e9ecef; }
+
+        .popup-menu-dropdown {
+            position: absolute;
+            top: 55px; left: 0;
+            background: #ffffff;
+            border: 3px solid #000000;
+            border-radius: 14px;
+            box-shadow: 4px 4px 0px #000000;
+            width: 200px;
+            display: none;
+            flex-direction: column;
+            padding: 8px;
+            z-index: 20;
+        }
+
+        .popup-menu-dropdown.active { display: flex; }
+
+        .popup-menu-item {
+            background: #f8f9fa;
+            border: 2px solid #000;
+            text-align: left;
+            padding: 10px;
+            font-size: 13px;
+            font-family: 'Cherry Bomb One', cursive, sans-serif;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #000;
+            margin-bottom: 6px;
+            box-shadow: 2px 2px 0px #000;
+            transition: background 0.1s;
+        }
+
+        .popup-menu-item:hover { background: #e2e6ea; }
+
+        /* Dev Points Modal Styling */
+        .dev-points-banner {
+            max-width: 120px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 12px auto;
+        }
+
+        .dev-points-display-box {
+            font-size: 22px;
+            margin: 15px 0;
+        }
+
+        .dev-points-explanation {
+            font-size: 12px;
+            color: #000000;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="clouds-bg"></div>
+
+    <div class="top-nav-bar">
+        <div style="position: relative;">
+            <button class="menu-btn" onclick="togglePopupMenu()">選單</button>
+            <div id="popup-menu" class="popup-menu-dropdown">
+                <button class="popup-menu-item" onclick="openEditProfilePopup()">編輯個人檔案</button>
+                <button class="popup-menu-item" onclick="openWallet()">錢包</button>
+                <button class="popup-menu-item" onclick="openDevPointsModal()">開發者積分</button>
+                <button class="popup-menu-item" onclick="openSettingsPopup()">設定</button>
+            </div>
+        </div>
+        <button class="menu-btn" onclick="window.location.href='home.html'">首頁</button>
+    </div>
+
+    <div id="main-profile-container" class="main-container">
+        <!-- Profile Picture Display (Square) -->
+        <div class="profile-pfp-container">
+            <img id="profile-pfp-display" src="people.png" alt="個人頭像" class="profile-pfp-img" onerror="this.src='https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/people.png'">
+        </div>
+        
+        <h3 id="welcome-user" class="header-title">載入中...</h3>
+        <div id="uid-display" class="uid-badge">ID: 載入中...</div>
+        
+        <div class="social-stats">
+            <div class="stat-box" onclick="openFollowersModal()">
+                <div id="followers-count">0</div><span>粉絲</span>
+            </div>
+            <div class="stat-box" onclick="openFollowingModal()">
+                <div id="following-count">0</div><span>正在追蹤</span>
+            </div>
+        </div>
+
+        <div class="content-split-grid">
+            <div>
+                <div class="section-column-title">我建立的遊戲</div>
+                <div id="my-games-list" class="item-list-container">
+                    <div style="font-size:13px;">正在載入遊戲...</div>
+                </div>
+                <button id="show-next-games-btn" class="btn-show-next" style="display: none;" onclick="showNextGames()">顯示更多</button>
+            </div>
+            <div>
+                <div class="section-column-title">我發布的貼文</div>
+                <div id="my-posts-list" class="item-list-container">
+                    <div style="font-size:13px;">正在載入貼文...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; font-size: 20px;">編輯個人檔案</h3>
+            
+            <label class="label-title" style="text-align: left;">使用者名稱</label>
+            <input type="text" id="username-input" class="input-field" placeholder="使用者名稱">
+            
+            <label class="label-title" style="text-align: left;">頭像網址 (URL)</label>
+            <input type="text" id="pfp-url-input" class="input-field" placeholder="https://example.com/image.png">
+
+            <label class="label-title" style="text-align: left;">個人檔案顏色</label>
+            <input type="color" id="profile-color-input" class="color-input-field" value="#ffffff">
+
+            <label class="label-title" style="text-align: left;">個人簡介</label>
+            <textarea id="bio-input" class="input-field" rows="3" placeholder="介紹一下你自己..."></textarea>
+            
+            <button id="save-btn" class="btn-custom btn-save">儲存個人檔案</button>
+            <button class="btn-custom" style="background: #e9ecef; color: #000; margin-bottom: 0;" onclick="closeEditProfileModal()">關閉</button>
+        </div>
+    </div>
+
+    <!-- Dev Points Modal -->
+    <div id="dev-points-modal" class="modal-overlay">
+        <div class="modal-content">
+            <img src="bannedwarning.png" alt="警告橫幅" class="dev-points-banner" onerror="this.src='https://github.com/ThatOneDeveloperDevWorld/devworldsource/blob/main/logo1.png?raw=true'">
+            
+            <div id="modal-dev-points-display" class="dev-points-display-box">
+                載入中...
+            </div>
+
+            <div class="dev-points-explanation">
+                這些是你的 <b>開發者積分 (dev points)</b>。積分越低，帳號受到的 <b>限制</b> 就越多。
+            </div>
+
+            <button class="btn-custom" style="background: #e9ecef; color: #000; margin-top: 15px; margin-bottom: 0;" onclick="closeDevPointsModal()">關閉</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; font-size: 20px;">設定</h3>
+            <button id="logout-btn" class="btn-custom btn-logout" style="margin-bottom: 12px;">登出</button>
+            <button id="delete-account-btn" class="btn-custom btn-delete">刪除帳號</button>
+            <button class="btn-custom" style="background: #e9ecef; color: #000; margin-top: 12px; margin-bottom: 0;" onclick="closeSettingsModal()">關閉</button>
+        </div>
+    </div>
+
+    <!-- Followers / Following List Modal -->
+    <div id="social-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="social-modal-title" style="margin-top: 0; font-size: 18px;">使用者</h3>
+            <div id="social-user-list" class="user-list-popup">
+                <div style="font-size: 13px; color: #555; text-align: center;">載入中...</div>
+            </div>
+            <button class="btn-custom" style="background: #e9ecef; color: #000; margin-bottom: 0;" onclick="closeSocialModal()">關閉</button>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: #ff595e; font-size: 20px;">確定要刪除帳號嗎？</h3>
+            <p style="font-size: 13px; color: #333; margin-bottom: 20px; font-weight: 600;">
+                警告：此操作為永久性且 <strong>無法復原</strong>。你所有的資料將被完全清除。
+            </p>
+            <button id="confirm-delete-btn" class="btn-custom" style="background: #ff595e; color: #fff; margin-bottom: 10px;">是的，刪除我的帳號</button>
+            <button id="cancel-delete-btn" class="btn-custom" style="background: #e9ecef; color: #000; margin-bottom: 0;">取消</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzjI_B6WrMpnH9bD8jfezcYbVJt3qdLKA",
+            authDomain: "devworldcn.firebaseapp.com",
+            projectId: "devworldcn",
+            storageBucket: "devworldcn.firebasestorage.app",
+            messagingSenderId: "1078417025797",
+            appId: "1:1078417025797:web:b52a825d5a3b0b182b656c",
+            measurementId: "G-BMRTW2FG75"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const db = firebase.firestore();
+        db.settings({ experimentalForceLongPolling: true });
+
+        let currentUserData = null;
+        let cachedGames = [];
+        let cachedPosts = [];
+        let currentGameIndex = 0;
+        const PAGE_SIZE = 3;
+
+        function togglePopupMenu() {
+            const menu = document.getElementById("popup-menu");
+            menu.classList.toggle("active");
+        }
+
+        function openEditProfilePopup() {
+            togglePopupMenu();
+            document.getElementById("edit-profile-modal").classList.add("active");
+        }
+
+        function closeEditProfileModal() {
+            document.getElementById("edit-profile-modal").classList.remove("active");
+        }
+
+        function openWallet() {
+            window.location.href = "wallet.html";
+        }
+
+        function openDevPointsModal() {
+            togglePopupMenu();
+            document.getElementById("dev-points-modal").classList.add("active");
+        }
+
+        function closeDevPointsModal() {
+            document.getElementById("dev-points-modal").classList.remove("active");
+        }
+
+        function openSettingsPopup() {
+            togglePopupMenu();
+            document.getElementById("settings-modal").classList.add("active");
+        }
+
+        function closeSettingsModal() {
+            document.getElementById("settings-modal").classList.remove("active");
+        }
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById("uid-display").innerText = "ID: " + user.uid;
+                const userDocRef = db.collection("users").doc(user.uid);
+
+                userDocRef.get().then((doc) => {
+                    if (doc.exists) {
+                        currentUserData = doc.data();
+                        
+                        let devPoints = currentUserData.devPoints !== undefined ? currentUserData.devPoints : 100;
+
+                        // Automatic ban check if dev points drop into banned range (79 to 0) -> sets isBanned to true
+                        if (devPoints <= 79) {
+                            userDocRef.set({ isBanned: true }, { merge: true }).then(() => {
+                                alert("你的帳號已被封鎖，因為你的開發者積分降至 " + devPoints + " 分。");
+                                firebase.auth().signOut().then(() => {
+                                    window.location.href = "index.html";
+                                });
+                            });
+                            return;
+                        }
+
+                        // Populate the Dev Points modal status display with plain colored text (no background, no emojis)
+                        const modalDisplay = document.getElementById("modal-dev-points-display");
+
+                        if (devPoints === 100) {
+                            modalDisplay.style.color = "#2b8a3e"; // Green
+                            modalDisplay.innerText = `${devPoints}`;
+                        } else if (devPoints >= 90 && devPoints <= 99) {
+                            modalDisplay.style.color = "#f59f00"; // Yellow
+                            modalDisplay.innerText = `${devPoints}`;
+                        } else if (devPoints >= 80 && devPoints <= 89) {
+                            modalDisplay.style.color = "#d9480f"; // Orange
+                            modalDisplay.innerText = `${devPoints}`;
+                        } else {
+                            modalDisplay.style.color = "#c92a2a"; // Red
+                            modalDisplay.innerText = `${devPoints}`;
+                        }
+
+                        let updateData = {};
+                        let needsUpdate = false;
+
+                        if (!currentUserData.followers) { updateData.followers = []; needsUpdate = true; }
+                        if (!currentUserData.following) { updateData.following = []; needsUpdate = true; }
+                        if (currentUserData.devPoints === undefined) { updateData.devPoints = 100; needsUpdate = true; }
+                        if (currentUserData.isBanned === undefined) { updateData.isBanned = false; needsUpdate = true; }
+                        if (currentUserData.pfpUrl === undefined) { updateData.pfpUrl = ""; needsUpdate = true; }
+                        if (currentUserData.profileColor === undefined) { updateData.profileColor = "#ffffff"; needsUpdate = true; }
+
+                        if (needsUpdate) {
+                            userDocRef.set(updateData, { merge: true });
+                        }
+
+                        document.getElementById("username-input").value = currentUserData.Username || "";
+                        document.getElementById("bio-input").value = currentUserData.Bio || "";
+                        document.getElementById("pfp-url-input").value = currentUserData.pfpUrl || "";
+                        document.getElementById("profile-color-input").value = currentUserData.profileColor || "#ffffff";
+                        document.getElementById("welcome-user").innerText = currentUserData.Username || "創作者個人檔案";
+                        
+                        // Set main profile card background color
+                        document.getElementById("main-profile-container").style.backgroundColor = currentUserData.profileColor || "#ffffff";
+
+                        // Set profile picture or default to people.png
+                        const pfpImg = document.getElementById("profile-pfp-display");
+                        if (currentUserData.pfpUrl && currentUserData.pfpUrl.trim() !== "") {
+                            pfpImg.src = currentUserData.pfpUrl;
+                        } else {
+                            pfpImg.src = "people.png";
+                        }
+
+                        document.getElementById("followers-count").innerText = (currentUserData.followers || []).length;
+                        document.getElementById("following-count").innerText = (currentUserData.following || []).length;
+                    } else {
+                        currentUserData = {
+                            Username: "DevWorldUser",
+                            Bio: "正在製作超棒的遊戲！",
+                            followers: [],
+                            following: [],
+                            devPoints: 100,
+                            isBanned: false,
+                            pfpUrl: "",
+                            profileColor: "#ffffff"
+                        };
+                        userDocRef.set(currentUserData, { merge: true });
+                        document.getElementById("welcome-user").innerText = "DevWorldUser";
+                        document.getElementById("profile-pfp-display").src = "people.png";
+                        document.getElementById("main-profile-container").style.backgroundColor = "#ffffff";
+                    }
+                });
+
+                loadUserContent(user.uid);
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        async function openFollowersModal() {
+            if (!currentUserData) return;
+            document.getElementById('social-modal-title').innerText = "粉絲";
+            await renderUserList(currentUserData.followers || []);
+            document.getElementById('social-modal').classList.add('active');
+        }
+
+        async function openFollowingModal() {
+            if (!currentUserData) return;
+            document.getElementById('social-modal-title').innerText = "正在追蹤";
+            await renderUserList(currentUserData.following || []);
+            document.getElementById('social-modal').classList.add('active');
+        }
+
+        function closeSocialModal() {
+            document.getElementById('social-modal').classList.remove('active');
+        }
+
+        async function renderUserList(userIds) {
+            const listContainer = document.getElementById('social-user-list');
+            listContainer.innerHTML = '<div style="font-size: 13px; color: #555; text-align: center;">載入中...</div>';
+
+            if (userIds.length === 0) {
+                listContainer.innerHTML = '<div style="font-size: 13px; color: #555; text-align: center;">找不到使用者。</div>';
+                return;
+            }
+
+            listContainer.innerHTML = '';
+            for (let uid of userIds) {
+                try {
+                    let userDoc = await db.collection("users").doc(uid).get();
+                    if (userDoc.exists) {
+                        let uData = userDoc.data();
+                        let username = uData.Username || uData.username || "使用者";
+
+                        let item = document.createElement('a');
+                        item.className = 'user-popup-item';
+                        item.href = `userprofile.html?id=${uid}`;
+                        item.innerHTML = `
+                            <img src="https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/people.png" class="inline-card-icon" onerror="this.src='people.png'">
+                            <span>${username}</span>
+                        `;
+                        listContainer.appendChild(item);
+                    }
+                } catch (err) {
+                    console.error("取得使用者彈出視窗項目時發生錯誤：", err);
+                }
+            }
+        }
+
+        async function loadUserContent(uid) {
+            if (cachedGames.length === 0) {
+                try {
+                    const gameSnap = await db.collection("games").where("authorId", "==", uid).get();
+                    cachedGames = [];
+                    gameSnap.forEach(doc => {
+                        cachedGames.push({ id: doc.id, ...doc.data() });
+                    });
+                } catch (err) {
+                    console.error("載入遊戲時發生錯誤：", err);
+                }
+            }
+
+            renderGamesChunk();
+
+            if (cachedPosts.length === 0) {
+                const postsContainer = document.getElementById("my-posts-list");
+                try {
+                    const postSnap = await db.collection("posts").where("authorId", "==", uid).get();
+                    postsContainer.innerHTML = "";
+                    if (postSnap.empty) {
+                        postsContainer.innerHTML = '<div style="font-size:13px; color:#555;">尚未分享任何貼文。</div>';
+                    } else {
+                        postSnap.forEach(doc => {
+                            const post = doc.data();
+                            cachedPosts.push({ id: doc.id, ...post });
+                            const card = document.createElement("div");
+                            card.className = "content-card";
+                            card.innerHTML = `<div style="font-size:13px; word-break:break-word; display:flex; align-items:flex-start;">
+                                    <img src="https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/postsctrl.png" class="inline-card-icon" onerror="this.src='postsctrl.png'" style="margin-top:2px;">
+                                    <span>${post.text}</span>
+                                </div>
+                            `;
+                            const delBtn = document.createElement("button");
+                            delBtn.className = "btn-item-delete";
+                            delBtn.innerText = "刪除貼文";
+                            delBtn.onclick = () => deletePost(doc.id, uid);
+                            card.appendChild(delBtn);
+                            postsContainer.appendChild(card);
+                        });
+                    }
+                } catch (err) {
+                    console.error("載入貼文時發生錯誤：", err);
+                }
+            }
+        }
+
+        function renderGamesChunk() {
+            const gamesContainer = document.getElementById("my-games-list");
+            const showNextBtn = document.getElementById("show-next-games-btn");
+
+            if (cachedGames.length === 0) {
+                gamesContainer.innerHTML = '<div style="font-size:13px; color:#555;">尚未建立任何遊戲。</div>';
+                showNextBtn.style.display = "none";
+                return;
+            }
+
+            if (currentGameIndex === 0) {
+                gamesContainer.innerHTML = "";
+            }
+
+            const chunk = cachedGames.slice(currentGameIndex, currentGameIndex + PAGE_SIZE);
+            chunk.forEach(game => {
+                const card = document.createElement("div");
+                card.className = "content-card";
+                card.innerHTML = `
+                    <a href="play.html?id=${game.id}" class="card-title">
+                        <img src="https://raw.githubusercontent.com/ThatOneDeveloperDevWorld/devworldsource/main/gamectrl.png" class="inline-card-icon" onerror="this.src='gamectrl.png'">
+                        ${game.title || "未命名"}
+                    </a>
+                    <div class="card-meta">瀏覽次數：${game.visits || 0}</div>
+                `;
+                const delBtn = document.createElement("button");
+                delBtn.className = "btn-item-delete";
+                delBtn.innerText = "刪除遊戲";
+                delBtn.onclick = () => deleteGame(game.id, firebase.auth().currentUser.uid, game.authorId);
+                card.appendChild(delBtn);
+                gamesContainer.appendChild(card);
+            });
+
+            currentGameIndex += PAGE_SIZE;
+
+            if (currentGameIndex < cachedGames.length) {
+                showNextBtn.style.display = "block";
+            } else {
+                showNextBtn.style.display = "none";
+            }
+        }
+
+        function showNextGames() {
+            renderGamesChunk();
+        }
+
+        // Admin game deletion handling dev points deduction and ban flag
+        async function deleteGame(gameId, currentAuthUid, authorId) {
+            const adminUid = 'ccZGPg7EzbNphnL0du3msMFIpjJ3';
+            const isAdmin = (currentAuthUid === adminUid);
+
+            let confirmMsg = isAdmin && currentAuthUid !== authorId ? 
+                "管理員操作：要刪除此使用者的遊戲並扣除 10 點開發者積分嗎？" : 
+                "你確定要刪除這個遊戲嗎？";
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                await db.collection("games").doc(gameId).delete();
+
+                if (isAdmin && currentAuthUid !== authorId) {
+                    const targetUserRef = db.collection("users").doc(authorId);
+                    await db.runTransaction(async (transaction) => {
+                        const userDoc = await transaction.get(targetUserRef);
+                        let currentPoints = 100;
+                        if (userDoc.exists && userDoc.data().devPoints !== undefined) {
+                            currentPoints = userDoc.data().devPoints;
+                        }
+                        const newPoints = Math.max(0, currentPoints - 10);
+                        let updatePayload = { devPoints: newPoints };
+                        if (newPoints <= 79) {
+                            updatePayload.isBanned = true;
+                        }
+                        transaction.set(targetUserRef, updatePayload, { merge: true });
+                    });
+                    alert("遊戲已被管理員刪除。作者的開發者積分已減少 10 點。");
+                } else {
+                    alert("遊戲已刪除。");
+                }
+
+                cachedGames = cachedGames.filter(g => g.id !== gameId);
+                currentGameIndex = 0;
+                document.getElementById("my-games-list").innerHTML = "";
+                renderGamesChunk();
+            } catch (err) {
+                alert("刪除遊戲失敗：" + err.message);
+            }
+        }
+
+        async function deletePost(postId, uid) {
+            if (!confirm("你確定要刪除這篇貼文嗎？")) return;
+            try {
+                await db.collection("posts").doc(postId).delete();
+                cachedPosts = cachedPosts.filter(p => p.id !== postId);
+                alert("貼文已刪除。");
+                location.reload();
+            } catch (err) {
+                alert("刪除貼文失敗：" + err.message);
+            }
+        }
+
+        document.getElementById("save-btn").addEventListener("click", () => {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                const newUsername = document.getElementById("username-input").value;
+                const newBio = document.getElementById("bio-input").value;
+                const newPfpUrl = document.getElementById("pfp-url-input").value.trim();
+                const newProfileColor = document.getElementById("profile-color-input").value;
+
+                db.collection("users").doc(user.uid).set({
+                    Username: newUsername,
+                    Bio: newBio,
+                    pfpUrl: newPfpUrl,
+                    profileColor: newProfileColor
+                }, { merge: true })
+                .then(() => {
+                    document.getElementById("welcome-user").innerText = newUsername;
+                    document.getElementById("main-profile-container").style.backgroundColor = newProfileColor;
+                    
+                    const pfpImg = document.getElementById("profile-pfp-display");
+                    if (newPfpUrl) {
+                        pfpImg.src = newPfpUrl;
+                    } else {
+                        pfpImg.src = "people.png";
+                    }
+
+                    if (currentUserData) {
+                        currentUserData.Username = newUsername;
+                        currentUserData.pfpUrl = newPfpUrl;
+                        currentUserData.profileColor = newProfileColor;
+                    }
+                    alert("個人檔案更新成功！");
+                    closeEditProfileModal();
+                })
+                .catch((error) => {
+                    alert("儲存時發生錯誤：" + error.message);
+                });
+            }
+        });
+
+        document.getElementById("logout-btn").addEventListener("click", () => {
+            firebase.auth().signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        });
+
+        const deleteModal = document.getElementById('delete-modal');
+
+        document.getElementById('delete-account-btn').addEventListener('click', () => {
+            closeSettingsModal();
+            deleteModal.classList.add('active');
+        });
+
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+            deleteModal.classList.remove('active');
+        });
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection("users").doc(user.uid).delete()
+                .then(() => user.delete())
+                .then(() => {
+                    alert("你的帳號已成功刪除。");
+                    window.location.href = "index.html";
+                })
+                .catch((error) => {
+                    if (error.code === 'auth/requires-recent-login') {
+                        alert("基於安全考量，請先登出並重新登入，然後再刪除帳號。");
+                    } else {
+                        alert("刪除帳號時發生錯誤：" + error.message);
+                    }
+                    deleteModal.classList.remove('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
